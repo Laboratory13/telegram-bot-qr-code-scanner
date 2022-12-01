@@ -3,20 +3,45 @@ from lang import lang
 
 
 # print(message.from_user.language_code)
-def kb_maker(lang:lang.en):
-    bu = types.KeyboardButton(lang.close_con)
-    bv = types.KeyboardButton(lang.ch_lang)
-    return types.ReplyKeyboardMarkup(resize_keyboard=True).insert(bu).insert(bv)
+def kb_maker( lang:lang.ru ):
+    bu = types.KeyboardButton( lang.share_contact, request_contact = True )
+    return types.ReplyKeyboardMarkup( resize_keyboard=True ).insert( bu )
 
-def rate_kb(lang:lang.en, c):
+def lang_kb() -> types.ReplyKeyboardMarkup:
     b1 = [
-            types.InlineKeyboardButton("1😡", callback_data="rate_1_" + c ),
-            types.InlineKeyboardButton("2😭", callback_data="rate_2_" + c ),
-            types.InlineKeyboardButton("3😢", callback_data="rate_3_" + c ),
-            types.InlineKeyboardButton("4🙂", callback_data="rate_4_" + c ),
-            types.InlineKeyboardButton("5☺️", callback_data="rate_5_" + c )
+            [
+                types.KeyboardButton("🇺🇿 O'zbekcha 🇺🇿"),
+                types.KeyboardButton("🇷🇺 Русский 🇷🇺")
+            ]
         ]
-    return types.InlineKeyboardMarkup(5, [b1])
+    return types.ReplyKeyboardMarkup( keyboard=b1, resize_keyboard=True, one_time_keyboard=True, row_width=2 )
 
-def no_kb(lang:lang.en):
-    return types.ReplyKeyboardMarkup([[types.KeyboardButton(lang.tell_no)]],resize_keyboard=True)
+def menu_kb( lang:lang.ru ):
+    kb = [
+        [
+            types.KeyboardButton(lang.check),
+            types.KeyboardButton(lang.settings)
+        ],
+        {
+            types.KeyboardButton(lang.instructions),
+            types.KeyboardButton(lang.contact_us)
+        }
+    ]
+    return types.ReplyKeyboardMarkup( keyboard=kb, resize_keyboard=True, row_width=2 )
+
+def qr_kb( lang:lang.ru, msg_id, chat_id ):
+    ikb1 = types.InlineKeyboardButton( lang.accept, callback_data="qr_" + str( msg_id ) + "_" + str( chat_id ) )
+    ikb2 = types.InlineKeyboardButton( lang.reject, callback_data="ro_" + str( msg_id ) + "_" + str( chat_id ) )
+    return types.InlineKeyboardMarkup( row_width=2 ).insert( ikb1 ).insert( ikb2 )
+
+def settings_kb( lang:lang.ru ) -> types.ReplyKeyboardMarkup:
+    b1 = types.KeyboardButton( lang.menu )
+    return lang_kb().insert( b1 )
+
+def admin_settings_kb( lang:lang.ru ) -> types.ReplyKeyboardMarkup:
+    b1 = types.KeyboardButton( lang.change_video )
+    return settings_kb( lang ).insert( b1 )
+
+def reject( lang:lang.ru ):
+    b1 = types.KeyboardButton( lang.close )
+    return types.ReplyKeyboardMarkup( resize_keyboard=True ).insert( b1 )
