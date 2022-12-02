@@ -40,8 +40,10 @@ def settings_kb( lang:lang.ru ) -> types.ReplyKeyboardMarkup:
 
 def admin_settings_kb( lang:lang.ru ) -> types.ReplyKeyboardMarkup:
     b1 = types.KeyboardButton( lang.change_video )
-    return settings_kb( lang ).insert( b1 )
+    b2 = types.KeyboardButton( lang.get_team )
+    return settings_kb( lang ).insert( b1 ).insert( b2 )
 
 def reject( lang:lang.ru ):
     b1 = types.KeyboardButton( lang.close )
-    return types.ReplyKeyboardMarkup( resize_keyboard=True ).insert( b1 )
+    b2 = types.KeyboardButton( lang.skip )
+    return types.ReplyKeyboardMarkup( resize_keyboard=True ).insert( b1 ).insert( b2 )

@@ -1,5 +1,7 @@
-from helpers.api_connection import get_lang, register, register_db, get_lang_str, set_lang, make_super, add_message, set_status, close_status, get_status, add_proove_photo, add_proove_description, get_msg_before_closing, set_choosen_status
+from helpers.api_connection import get_lang, register_db, get_lang_str, set_lang, make_super, add_message, set_status, get_msg_id
+from helpers.api_connection import close_status, get_status, add_proove_photo, add_proove_description, set_choosen_status, set_rejected_status
 from helpers.filter import Is_admin, Share_tel, Have_status
+import helpers.joha_api as japi
 from aiogram import types
 from keyboards import user_kb
 from main import dp
@@ -54,20 +56,39 @@ async def must_share( message: types.Message ):
 @dp.message_handler( Have_status(), Text(equals=lang.gal("close")) )
 async def reject_status( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
-    close_status( message.from_user.id )
+    msg_id, chat_id = get_msg_id( message.from_user.id )
+    close_status( message.from_user.id, msg_id, chat_id )
     await message.answer( lan.closed, reply_markup=user_kb.menu_kb(lan) )
+
+
+@dp.message_handler( Have_status(), Text(equals=lang.gal("skip")) )
+async def reject_status( message: types.Message ):
+    lan = get_lang( message.from_user.id, message.from_user.language_code )
+    status = get_status( message.from_user.id )
+    msg_id, chat_id = get_msg_id( message.from_user.id )
+    filename = "x.png"
+    if status == 5:
+        add_proove_photo( message.from_user.id, filename, msg_id, chat_id )
+        set_status( message.from_user.id, 6, msg_id, chat_id )
+        await message.answer( lan.photo_desc, reply_markup=user_kb.reject(lan) )
+    elif status == 6:
+        add_proove_description( message.from_user.id, message.text, msg_id, chat_id )
+        set_status( message.from_user.id, 0, msg_id, chat_id )
+        # to do should get msg_id and chat_id then edit it.
+        await bot.edit_message_text( lan.done, chat_id, msg_id, reply_markup=types.InlineKeyboardMarkup() )
+        await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
 
 
 @dp.message_handler( Have_status(), content_types=['text'] )
 async def block_status( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
+    msg_id, chat_id = get_msg_id( message.from_user.id )
     status = get_status( message.from_user.id )
     if status == 5:
         await message.answer( lan.upload_photo )
     elif status == 6:
-        msg_id, chat_id = get_msg_before_closing( message.from_user.id )
-        add_proove_description( message.from_user.id, message.text )
-        set_status( message.from_user.id, 0 )
+        add_proove_description( message.from_user.id, message.text, msg_id, chat_id )
+        set_status( message.from_user.id, 0, msg_id, chat_id )
         # to do should get msg_id and chat_id then edit it.
         await bot.edit_message_text( lan.done, chat_id, msg_id, reply_markup=types.InlineKeyboardMarkup() )
         await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
@@ -133,6 +154,24 @@ async def change_video_handler( message: types.Message ):
     await message.answer( lan.send_video )
 
 
+@dp.message_handler( Is_admin(), Text(equals=lang.gal("get_team")) )
+async def get_team_handler( message: types.Message ):
+    lan = get_lang( message.from_user.id, message.from_user.language_code )
+    users = japi.get_team()
+    text = ""
+    for user in users:
+        text = text + str(user["id"]) + " " + user["seller"]["sellerName"] + " " + user["seller"]["sellerPhone"] + "\n"
+    await message.answer( text )
+    
+    # print(japi.get_team())
+
+    # [
+    #     {'id': 2, 'seller_id': 14, 'seller': {'id': 14, 'sellerName': 'Papay', 'sellerPhone': '998909878987', 'role': False, 'created_at': '2022-11-26T13:37:36.000000Z', 'updated_at': '2022-11-26T13:37:36.000000Z'}}, 
+    #     {'id': 5, 'seller_id': 1, 'seller': {'id': 1, 'sellerName': 'New seller name2', 'sellerPhone': '998946667788', 'role': True, 'created_at': '2022-11-26T10:48:49.000000Z', 'updated_at': '2022-11-27T20:37:19.000000Z'}}, 
+    #     {'id': 6, 'seller_id': 40, 'seller': {'id': 40, 'sellerName': 'Jasur', 'sellerPhone': '998909632147', 'role': False, 'created_at': '2022-11-30T15:58:18.000000Z', 'updated_at': '2022-11-30T15:58:18.000000Z'}}
+    # ]
+
+
 @dp.message_handler( Text(equals=lang.gal("settings")) )
 async def settings_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
@@ -141,8 +180,9 @@ async def settings_handler( message: types.Message ):
 
 async def proove_file_worker( message: types.Message, file: types.Document, filename:str, lan:lang.ru ):
     await file.download( destination_file="prooves/" + filename )
-    add_proove_photo( message.from_user.id, filename )
-    set_status( message.from_user.id, 6 )
+    msg_id, chat_id = get_msg_id( message.from_user.id )
+    add_proove_photo( message.from_user.id, filename, msg_id, chat_id )
+    set_status( message.from_user.id, 6, msg_id, chat_id )
     await message.answer( lan.photo_desc, reply_markup=user_kb.reject(lan) )
 
 
@@ -151,7 +191,7 @@ async def doc_proove_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
     status = get_status( message.from_user.id )
     if ( status == 5 ):
-        filename = message.document.file_name
+        filename = message.document.file_unique_id + "_" + message.document.file_name
         if( message.document.mime_type in ["image/png", "image/jpeg"] ):
             await proove_file_worker( message, message.document, filename, lan )
     else:
@@ -200,7 +240,7 @@ async def photo_handler( message: types.Message ):
 @dp.message_handler( content_types=['document'] )
 async def file_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
-    filename = message.document.file_name
+    filename = message.document.file_unique_id + "_" + message.document.file_name
     if( message.document.mime_type in ["image/png", "image/jpeg"] ):
         await photo_file_worker(message, message.document, filename, lan)
 
@@ -228,6 +268,7 @@ async def last_handler( message: types.Message ):
 
 # _______________________________________________________________ Callback handlers _______________________________________________________________
 
+
 @dp.callback_query_handler( Have_status() )
 async def last_callback_handler( callback : types.CallbackQuery ):
     lan = get_lang( callback.from_user.id, callback.from_user.language_code )
@@ -237,9 +278,19 @@ async def last_callback_handler( callback : types.CallbackQuery ):
 # Accept inline keyboard handler
 @dp.callback_query_handler( Text(startswith="qr_") )
 async def accept( callback : types.CallbackQuery ):
-    msg_id, chat_id  = callback.data.split("_")[1:3]
+    msg_id, chat_id = callback.data.split("_")[1:3]
     lan = get_lang( callback.from_user.id, callback.from_user.language_code )
-    set_status( callback.from_user.id, 5 )
+    set_status( callback.from_user.id, 5, msg_id, chat_id )
     set_choosen_status( msg_id, chat_id )
     await callback.message.answer( lan.send_proove, reply_markup=user_kb.reject(lan) )
     await callback.answer( lan.done )
+
+@dp.callback_query_handler( Text(startswith="ro_") )
+async def reject( callback : types.CallbackQuery ):
+    msg_id, chat_id = callback.data.split("_")[1:3]
+    lan = get_lang( callback.from_user.id, callback.from_user.language_code )
+    set_status( callback.from_user.id, 6, msg_id, chat_id )
+    set_rejected_status( msg_id, chat_id )
+    await callback.message.answer( lan.reason, reply_markup=user_kb.reject(lan) )
+    await callback.answer( lan.done )
+

@@ -27,4 +27,7 @@ class Have_status(Filter):
         quer = "SELECT * FROM users WHERE id = %s"
         val = (message.from_user.id, )
         ans = database.select_one(quer, val)
-        return ans["status"] != 0
+        if ans == {}:
+            return False
+        else:
+            return ans["status"] != 0

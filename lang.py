@@ -29,6 +29,9 @@ class Lang:
         not_finished    = "Закончите задачу!"
         close           = "Отменить"
         closed          = "Отменено"
+        get_team        = "Список продавцов"
+        skip            = "Пропустить"
+        reason          = "Напишите причину отказа"
 
 
     class uz(ru):
@@ -58,6 +61,10 @@ class Lang:
         not_finished    = "Vazifani tugating!"
         close           = "Отменить"
         closed          = "Отменено"
+        get_team        = "Sotuvchilar royxati"
+        skip            = "O'tkazib yuborish"
+        reason          = "Rad etish sababini kiriting"
+        
         
 
 
