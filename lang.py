@@ -3,6 +3,7 @@
 
 class Lang:
     class ru:
+        abr             = "ru"
         wellcome        = "Привет, это бот помошник продавец!\nПожалуйста поделитесь с контактом для продолжения."
         share_contact   = "Поделиться c контактом"
         please_contact  = "Поделитесь с контактом для регистрации!"
@@ -32,9 +33,19 @@ class Lang:
         get_team        = "Список продавцов"
         skip            = "Пропустить"
         reason          = "Напишите причину отказа"
+        prod_name       = "Наименования продукта"
+        prod_desc       = "Описание продукта"
+        client          = "Клиент"
+        order_time      = "Время заказа"
+        phone           = "Тел"
+        price           = "Цена за продукт"
+        prod_not_found  = "Продукт не найден"
+        prod_sold       = "Продукт уже был выдан"
+        last            = "Не понимаю!"
 
 
     class uz(ru):
+        abr             = "uz"
         wellcome        = "Salom bu bot sotuvchi yordamchisi!\n"
         share_contact   = "Kontaktni jo'natish"
         please_contact  = "Registratsiya uchun kontaktingizni jo'nating!"
@@ -42,7 +53,7 @@ class Lang:
         done            = "Bajarildi!"
         settings        = "Sozlamalar"
         check           = "QR-Tekshirish"
-        instructions    = "Instruksiya"
+        instructions    = "Qo'llanma"
         contact_us      = "Bog'lanish"
         send_photo      = "QR-kod rasmini jo'nating"
         contacts        = "Bu yerda kompaniya\nkontaktlari bo'ladi\nTaxminan 2-3 qator"
@@ -59,11 +70,21 @@ class Lang:
         send_video      = "Video-qo'llanmani jo'nating"
         change_video    = "Qo'llanmani o'zgartirish"
         not_finished    = "Vazifani tugating!"
-        close           = "Отменить"
-        closed          = "Отменено"
+        close           = "Tugatish"
+        closed          = "Tugatildi"
         get_team        = "Sotuvchilar royxati"
         skip            = "O'tkazib yuborish"
         reason          = "Rad etish sababini kiriting"
+        prod_name       = "Tovar yoki xizmat nomi"
+        prod_desc       = "Tovar ta'rifi"
+        client          = "Mijoz"
+        order_time      = "Buyurtma vaqti"
+        phone           = "Tel"
+        price           = "Tovar yoki xizmat narxi"
+        prod_not_found  = "Tovar yoki xizmat topilmadi"
+        prod_sold       = "Xizmat oldin ko'rsatilgan"
+        last            = "Tushunmadim!"
+
         
         
 

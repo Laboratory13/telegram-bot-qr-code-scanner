@@ -1,4 +1,4 @@
-from helpers.api_connection import get_lang, register_db, get_lang_str, set_lang, make_super, add_message, set_status, get_msg_id
+from helpers.api_connection import get_lang, register_db, get_lang_str, set_lang, make_super, add_message, set_status, get_msg_id, get_prod_id, get_seller_id
 from helpers.api_connection import close_status, get_status, add_proove_photo, add_proove_description, set_choosen_status, set_rejected_status
 from helpers.filter import Is_admin, Share_tel, Have_status
 import helpers.joha_api as japi
@@ -39,9 +39,26 @@ async def tel_handler( message: types.Message ):
     if ( message.contact.user_id != message.from_user.id ):
         await message.answer( "Это не ваш контакт / Bu sizning kontaktingiz emas", reply_markup=user_kb.kb_maker(lan) )
     else:
-        register_db( message.from_user.full_name, message.from_user.id, message.contact.phone_number)
         # Register contact (message.from_user.id, message.from_user.full_name, message.contact.phone_number) 
+        seller_id = 0
+        ans = japi.add_team_member( message.from_user.full_name, str(int(message.contact.phone_number)) )
+        if( "error" in ans and ans["error"] == True ):
+            seller_id = japi.get_seller_id( str(int(message.contact.phone_number)) )
+        else:
+            seller_id = ans["seller"]["id"]
+        register_db( message.from_user.full_name, message.from_user.id, int(message.contact.phone_number), seller_id )
         await message.answer( "Выберите язык / Tilni tanlang", reply_markup = user_kb.lang_kb() ) 
+        # print( ans )
+        # {'seller': {
+            # 'id': 53, 
+            # 'sellerName': 'Lazizjonov Jasurbek',
+            # 'sellerPhone': '998946380341',
+            # 'role': 0, 
+            # 'updated_at': '2022-12-03T16:41:57.000000Z', 
+            # 'created_at': '2022-12-03T16:41:57.000000Z'}, 
+            # 'message': 'Store Seller has been created'
+        # }
+
 
 @dp.message_handler( Share_tel() )
 async def must_share( message: types.Message ):
@@ -49,7 +66,7 @@ async def must_share( message: types.Message ):
     await message.answer( lan.please_contact, reply_markup=user_kb.kb_maker(lan) )
 
 
-# ___________________________________________________________________Main proccess_____________________________________________________________________
+# ___________________________________________________________________Have Status_____________________________________________________________________
 
 
 
@@ -61,6 +78,24 @@ async def reject_status( message: types.Message ):
     await message.answer( lan.closed, reply_markup=user_kb.menu_kb(lan) )
 
 
+async def finish_selling( message:types.Message, msg_id, chat_id, lan:lang.ru ):
+    add_proove_description( message.from_user.id, message.text, msg_id, chat_id )
+    set_status( message.from_user.id, 0, msg_id, chat_id )
+    prod_id, filename, rejected, file_type = get_prod_id( msg_id, chat_id )
+    seller_id = get_seller_id( message.from_user.id )
+    # print("sending to joha: ", prod_id, seller_id, message.text, "x.png" if rejected else filename, file_type, 0 if rejected else 1)
+    ans = japi.sell_reports( prod_id, seller_id, message.text, "x.png" if rejected else filename, file_type, 0 if rejected else 1 )
+    # send_report( prod_id, seller_id, message.text, filename, file_type, 0 if rejected else 1 )
+    await bot.edit_message_text( lan.done, chat_id, msg_id, reply_markup=types.InlineKeyboardMarkup() )
+    if( "error" in ans ):
+        await message.answer( lan.prod_sold, reply_markup=user_kb.menu_kb(lan) )
+    else:
+        await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
+    # {'error': True, 'message': {'product_code_id': ['validation.required'], 'seller_id': ['validation.required'], 'action': ['validation.required']}}
+    return
+
+
+
 @dp.message_handler( Have_status(), Text(equals=lang.gal("skip")) )
 async def reject_status( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
@@ -68,16 +103,11 @@ async def reject_status( message: types.Message ):
     msg_id, chat_id = get_msg_id( message.from_user.id )
     filename = "x.png"
     if status == 5:
-        add_proove_photo( message.from_user.id, filename, msg_id, chat_id )
+        add_proove_photo( message.from_user.id, filename, msg_id, chat_id, "image/png" )
         set_status( message.from_user.id, 6, msg_id, chat_id )
         await message.answer( lan.photo_desc, reply_markup=user_kb.reject(lan) )
     elif status == 6:
-        add_proove_description( message.from_user.id, message.text, msg_id, chat_id )
-        set_status( message.from_user.id, 0, msg_id, chat_id )
-        # to do should get msg_id and chat_id then edit it.
-        await bot.edit_message_text( lan.done, chat_id, msg_id, reply_markup=types.InlineKeyboardMarkup() )
-        await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
-
+        await finish_selling(message, msg_id, chat_id, lan)
 
 @dp.message_handler( Have_status(), content_types=['text'] )
 async def block_status( message: types.Message ):
@@ -87,17 +117,9 @@ async def block_status( message: types.Message ):
     if status == 5:
         await message.answer( lan.upload_photo )
     elif status == 6:
-        add_proove_description( message.from_user.id, message.text, msg_id, chat_id )
-        set_status( message.from_user.id, 0, msg_id, chat_id )
-        # to do should get msg_id and chat_id then edit it.
-        await bot.edit_message_text( lan.done, chat_id, msg_id, reply_markup=types.InlineKeyboardMarkup() )
-        await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
+        await finish_selling(message, msg_id, chat_id, lan)
 
-
-@dp.message_handler( Text(equals=lang.gal("menu")) )
-async def send_menu( message: types.Message ):
-    lan = get_lang( message.from_user.id, message.from_user.language_code )
-    await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
+# ___________________________________________________________________Main process_____________________________________________________________________
 
 
 @dp.message_handler( Text(equals=lang.gal("lang")) )
@@ -110,24 +132,16 @@ async def menu_handler( message: types.Message ):
     lan = set_lang( message.from_user.id, lan_str )
     await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
 
+@dp.message_handler( Text(equals=lang.gal("menu")) )
+async def send_menu( message: types.Message ):
+    lan = get_lang( message.from_user.id, message.from_user.language_code )
+    await message.answer( lan.done, reply_markup=user_kb.menu_kb(lan) )
+
 
 @dp.message_handler( Text(equals=lang.gal("check")) )
 async def check_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
     await message.answer( lan.send_photo )
-
-
-@dp.message_handler( commands=['superadmin'] )
-async def send_welcome( message: types.Message ):
-    lan = get_lang( message.from_user.id, message.from_user.language_code )
-    make_super( message.from_user.id )
-    await message.reply( "You become superadmin", reply_markup=user_kb.menu_kb(lan) )
-
-
-@dp.message_handler( Is_admin(), content_types=['video'] )
-async def video_uploader( message: types.Message ):
-    bot_d.video = message.video.file_id
-    await message.answer( "Default video was updated!\n" + bot_d.video )
 
 
 @dp.message_handler( Text(equals=lang.gal("instructions")) )
@@ -140,6 +154,21 @@ async def instructions_handler( message: types.Message ):
 async def contacts_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
     await message.answer( lan.contacts )
+
+
+# ___________________________________________________________________Admin functions_____________________________________________________________________
+
+@dp.message_handler( commands=['superadmin'] )
+async def send_welcome( message: types.Message ):
+    lan = get_lang( message.from_user.id, message.from_user.language_code )
+    make_super( message.from_user.id )
+    await message.reply( "You become superadmin", reply_markup=user_kb.menu_kb(lan) )
+
+
+@dp.message_handler( Is_admin(), content_types=['video'] )
+async def video_uploader( message: types.Message ):
+    bot_d.video = message.video.file_id
+    await message.answer( "Default video was updated!\n" + bot_d.video )
 
 
 @dp.message_handler( Is_admin(), Text(equals=lang.gal("settings")) )
@@ -178,12 +207,13 @@ async def settings_handler( message: types.Message ):
     await message.answer( lan.done, reply_markup=user_kb.settings_kb(lan) )
 
 
-async def proove_file_worker( message: types.Message, file: types.Document, filename:str, lan:lang.ru ):
+async def proove_file_worker( message: types.Message, file: types.Document, filename:str, lan:lang.ru, file_type ):
     await file.download( destination_file="prooves/" + filename )
     msg_id, chat_id = get_msg_id( message.from_user.id )
-    add_proove_photo( message.from_user.id, filename, msg_id, chat_id )
+    add_proove_photo( message.from_user.id, filename, msg_id, chat_id, file_type )
     set_status( message.from_user.id, 6, msg_id, chat_id )
     await message.answer( lan.photo_desc, reply_markup=user_kb.reject(lan) )
+    return
 
 
 @dp.message_handler( Have_status(), content_types=['document'] )
@@ -193,7 +223,7 @@ async def doc_proove_handler( message: types.Message ):
     if ( status == 5 ):
         filename = message.document.file_unique_id + "_" + message.document.file_name
         if( message.document.mime_type in ["image/png", "image/jpeg"] ):
-            await proove_file_worker( message, message.document, filename, lan )
+            await proove_file_worker( message, message.document, filename, lan, message.document.mime_type )
     else:
         await message.answer( lan.alrd_uploded )
 
@@ -204,19 +234,30 @@ async def proove_handler( message: types.Message ):
     status = get_status( message.from_user.id )
     if ( status == 5 ):
         filename = message.photo[-1].file_unique_id + ".jpg"
-        await proove_file_worker( message, message.photo[-1], filename, lan )
+        await proove_file_worker( message, message.photo[-1], filename, lan, "image/jpeg" )
     else:
         await message.answer( lan.alrd_uploded )
 
 async def photo_file_worker(message: types.Message, file: types.Document, filename:str, lan:lang.ru):
     await file.download( destination_file="downloads/" + filename )
-    val = str( read_qr_code( filename ) )
-    if val == "":
+    hash = str( read_qr_code( filename ) )
+    if hash == "":
         await message.reply( lan.not_found )
+        # to do: delete photo from disk to free space in disk
     else:
-        msg = await message.reply( val )
-        add_message( message.from_user.id, filename, msg.message_id, message.chat.id )
-        await bot.edit_message_reply_markup(message.chat.id, msg.message_id, reply_markup = user_kb.qr_kb(lan, msg.message_id, message.chat.id))
+        res = japi.hash_check(hash)
+        val, text = japi.get_print_values(res, lan)
+        if val == 1:
+            await message.reply( lan.prod_not_found )
+            # to do: delete photo from disk to free space in disk
+        elif val == 2:
+            await message.reply( lan.prod_sold + "\n" + text )
+            # to do: delete photo from disk to free space in disk
+        else:
+            prod_id = res["order"]["id"]
+            msg = await message.reply( text )
+            add_message( message.from_user.id, filename, msg.message_id, message.chat.id, prod_id )
+            await bot.edit_message_reply_markup( message.chat.id, msg.message_id, reply_markup = user_kb.qr_kb(lan, msg.message_id, message.chat.id) )
 
 
 @dp.message_handler( content_types=['photo'] )
@@ -284,6 +325,7 @@ async def accept( callback : types.CallbackQuery ):
     set_choosen_status( msg_id, chat_id )
     await callback.message.answer( lan.send_proove, reply_markup=user_kb.reject(lan) )
     await callback.answer( lan.done )
+
 
 @dp.callback_query_handler( Text(startswith="ro_") )
 async def reject( callback : types.CallbackQuery ):

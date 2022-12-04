@@ -2,9 +2,9 @@ from database.database import database
 from lang import lang
 
 
-def register_db(full_name, tg_id, phone, is_admin=False, lang="ru"):
-    quer = "INSERT INTO users (id, full_name, lang, is_admin, tel, status) VALUES (%s, %s, %s, %s, %s, %s)"
-    v = ( tg_id, full_name, lang, 1 if is_admin else 0, phone, 0 )
+def register_db(full_name, tg_id, phone, seller_id, is_admin=0, lang="ru"):
+    quer = "INSERT INTO users (id, full_name, lang, is_admin, tel, status, seller_id) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    v = ( tg_id, full_name, lang, is_admin, phone, 0, seller_id )
     database.insert(quer, v)
 
 
@@ -60,15 +60,15 @@ def close_status(id, msg_id, chat_id):
     set_status(id, 0, 0, 0)
 
 
-def add_message(id, file_id, msg_id, chat_id):
-    quer = "INSERT INTO messages (msg_id, file_id, user_id, chat_id) VALUES (%s, %s, %s, %s)"
-    val = (msg_id, file_id, id, chat_id) 
+def add_message(id, file_id, msg_id, chat_id, prod_id):
+    quer = "INSERT INTO messages (msg_id, file_id, user_id, chat_id, prod_id) VALUES (%s, %s, %s, %s, %s)"
+    val = (msg_id, file_id, id, chat_id, prod_id) 
     database.insert(quer, val)
 
 
-def add_proove_photo(user_id, filename, msg_id, chat_id):
-    quer = "UPDATE messages SET proove_file = %s, proved = %s WHERE user_id = %s AND proved = %s AND msg_id = %s AND chat_id = %s"
-    val = ( filename, 1, user_id, 3, msg_id, chat_id )
+def add_proove_photo(user_id, filename, msg_id, chat_id, file_type):
+    quer = "UPDATE messages SET proove_file = %s, proved = %s, file_type = %s WHERE user_id = %s AND proved = %s AND msg_id = %s AND chat_id = %s"
+    val = ( filename, 1, file_type, user_id, 3, msg_id, chat_id )
     database.insert( quer, val )
 
 
@@ -93,3 +93,15 @@ def set_rejected_status(msg_id, chat_id):
     quer = "UPDATE messages SET proved = %s, rejected = %s WHERE msg_id = %s AND chat_id = %s"
     val = ( 1, 1, msg_id, chat_id )
     database.insert( quer, val )
+
+def get_prod_id(msg_id, chat_id):
+    quer = "SELECT * FROM messages WHERE msg_id = %s and chat_id = %s"
+    val = ( msg_id, chat_id )
+    ans = database.select_one( quer, val )
+    return ans["prod_id"], ans["proove_file"],  ans["rejected"], ans["file_type"]
+
+def get_seller_id(user_id):
+    quer = "SELECT * FROM users WHERE id = %s"
+    val = ( user_id, )
+    ans = database.select_one( quer, val )
+    return ans["seller_id"]
