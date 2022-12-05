@@ -1,5 +1,6 @@
-from helpers.api_connection import get_lang, register_db, get_lang_str, set_lang, make_super, add_message, set_status, get_msg_id, get_prod_id, get_seller_id
-from helpers.api_connection import close_status, get_status, add_proove_photo, add_proove_description, set_choosen_status, set_rejected_status
+from helpers.self_connection import get_lang, register_db, set_lang, make_super, add_message, set_status, get_msg_id, get_prod_id, get_seller_id
+from helpers.self_connection import close_status, get_status, add_proove_photo, add_proove_description, set_choosen_status, set_rejected_status, connect_base
+from helpers.self_connection import check_phone
 from helpers.filter import Is_admin, Share_tel, Have_status
 import helpers.joha_api as japi
 from aiogram import types
@@ -15,9 +16,11 @@ class bot_defaults:
 
 bot_d = bot_defaults()
 
-# @dp.message_handler( Is_admin(), Text(equals=lang.gal( "chooseUser" )) )
-# async def choose_user(message: types.Message):
-#     lang = get_lang(message.from_user.id, message.from_user.language_code)
+async def startup(e):
+    print( "Bot is running..." )
+    team = japi.get_team()
+    connect_base( team )
+
 
 # ___________________________________________________________________Login proccess_____________________________________________________________________
 
@@ -41,13 +44,18 @@ async def tel_handler( message: types.Message ):
     else:
         # Register contact (message.from_user.id, message.from_user.full_name, message.contact.phone_number) 
         seller_id = 0
-        ans = japi.add_team_member( message.from_user.full_name, str(int(message.contact.phone_number)) )
-        if( "error" in ans and ans["error"] == True ):
-            seller_id = japi.get_seller_id( str(int(message.contact.phone_number)) )
+        allowed = check_phone( str(int(message.contact.phone_number)) )
+        if allowed:
+            ans = japi.add_team_member( message.from_user.full_name, str(int(message.contact.phone_number)) )
+            if( "error" in ans and ans["error"] == True ):
+                seller_id = japi.get_seller_id( str(int(message.contact.phone_number)) )
+            else:
+                seller_id = ans["seller"]["id"]
+            register_db( message.from_user.full_name, message.from_user.id, int(message.contact.phone_number), seller_id )
+
+            await message.answer( "Выберите язык / Tilni tanlang", reply_markup = user_kb.lang_kb() ) 
         else:
-            seller_id = ans["seller"]["id"]
-        register_db( message.from_user.full_name, message.from_user.id, int(message.contact.phone_number), seller_id )
-        await message.answer( "Выберите язык / Tilni tanlang", reply_markup = user_kb.lang_kb() ) 
+            await message.answer("Вы не сможете пользоватся с этим ботом!\nSiz ushbu bottan foydalana olmaysiz!")
         # print( ans )
         # {'seller': {
             # 'id': 53, 
