@@ -42,6 +42,12 @@ class Lang:
         prod_not_found  = "Продукт не найден"
         prod_sold       = "Продукт уже был выдан"
         last            = "Не понимаю!"
+        add_user        = "Добавить продавца"
+        choose_one      = "Выберите продавца"
+        sure            = "Вы хотите удалить продавца?"
+        yes             = "Да!"
+        type_name       = "Введите имя продавца"
+        type_phone      = "Введите номер телефона продавца: \nпример: 998991234567"
 
 
     class uz(ru):
@@ -84,6 +90,12 @@ class Lang:
         prod_not_found  = "Tovar yoki xizmat topilmadi"
         prod_sold       = "Xizmat oldin ko'rsatilgan"
         last            = "Tushunmadim!"
+        add_user        = "Sotuvchi qo'shish"
+        choose_one      = "Sotuvchini tanlang"
+        sure            = "Sotuvchini o'chirishni xohlaysizmi?"
+        yes             = "Ha!"
+        type_name       = "Sotuvchi nomini kiriting"
+        type_phone      = "Sotuvchi telefon raqamini kiriting: \nnamuna: 998991234567"
 
         
         

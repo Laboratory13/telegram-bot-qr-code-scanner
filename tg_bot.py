@@ -10,4 +10,7 @@ async def shutting(e):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, on_startup=handlers.admin.startup, on_shutdown=shutting)
+    try:
+        executor.start_polling(dp, on_startup=handlers.admin.startup,  skip_updates=True, on_shutdown=shutting, relax=0.3)
+    except:
+        print("Error in connection!")
