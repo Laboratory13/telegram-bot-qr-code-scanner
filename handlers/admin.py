@@ -1,7 +1,5 @@
-from helpers.self_connection import get_lang, register_db, set_lang, make_super, add_message, set_status, get_msg_id, get_prod_id, get_seller_id
-from helpers.self_connection import close_status, get_status, add_proove_photo, add_proove_description, set_choosen_status, set_rejected_status
-from helpers.self_connection import set_user_choosen, dont_del_user, get_del_user, set_status_zero, set_choosen_user_name, get_choosen_user_name, get_hrid
-from helpers.filter import Is_admin, Share_tel, Have_status, Not_allowed, Is_user
+from helpers.self_connection import *
+from helpers.filter import *
 import helpers.joha_api as japi
 from aiogram import types
 from keyboards import user_kb
@@ -12,7 +10,7 @@ from aiogram.dispatcher.filters import Text
 from helpers.QRreader import read_qr_code
         
 class bot_defaults:
-    video = "BAACAgIAAxkBAAIU_2OFmQgy1vNZgJi0McS8XPDQJxKeAAJtHwACqjkwSFImk3NqnjRgKwQ"
+    video = "BAACAgIAAxkBAAIgs2OQ0bmRt3Bxh9dmeIQNj8hMnyNoAAJbJAACf4GISNHpnA02PGT_KwQ"
 
 bot_d = bot_defaults()
 
@@ -131,7 +129,7 @@ async def accept_status( message: types.Message ):
         else:
             await message.answer( lan.done, reply_markup=user_kb.admin_menu_kb(lan) )
     else:
-        await message.reply( lan.last + " 1")
+        await message.reply( lan.last )
 
 
 @dp.message_handler( Have_status(), Text(equals=lang.gal("close")) )
@@ -153,7 +151,7 @@ async def reject_status( message: types.Message ):
         set_choosen_user_name( message.from_user.id, "")
         await message.answer( lan.closed, reply_markup=user_kb.admin_menu_kb(lan) )
     else:
-        await message.reply( lan.last + " 2" )
+        await message.reply( lan.last )
 
 
 @dp.message_handler( Have_status(), Text(equals=lang.gal("skip")) )
@@ -171,7 +169,7 @@ async def skip_status( message: types.Message ):
         filename = "x.png"
         await finish_selling(message, msg_id, chat_id, lan)
     else:
-        await message.reply( lan.last + " 3" )
+        await message.reply( lan.last )
 
 
 @dp.message_handler( Have_status(), content_types=['text'] )
@@ -202,7 +200,7 @@ async def block_status( message: types.Message ):
         else:
             await message.answer( lan.type_phone, reply_markup=user_kb.admin_close(lan) )
     else:
-        await message.reply( lan.last + " 4" )
+        await message.reply( lan.last )
 
 
 @dp.message_handler( Have_status(), content_types=['photo'] )
@@ -213,7 +211,7 @@ async def proove_handler( message: types.Message ):
         filename = message.photo[-1].file_unique_id + ".jpg"
         await proove_file_worker( message, message.photo[-1], filename, lan, "image/jpeg" )
     else:
-        await message.reply( lan.last + " 5" )
+        await message.reply( lan.last )
 
 
 @dp.message_handler( Have_status(), content_types=['document'] )
@@ -225,7 +223,7 @@ async def doc_proove_handler( message: types.Message ):
         if( message.document.mime_type in ["image/png", "image/jpeg"] ):
             await proove_file_worker( message, message.document, filename, lan, message.document.mime_type )
     else:
-        await message.reply( lan.last + " 6" )
+        await message.reply( lan.last )
 
 
 # ___________________________________________________________________Admin functions_____________________________________________________________________
@@ -368,13 +366,13 @@ async def send_welcome( message: types.Message ):
 @dp.message_handler()
 async def last_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
-    await message.reply( lan.last + " 7")
+    await message.reply( lan.last )
 
 
 @dp.message_handler( content_types=['photo'] )
 async def last_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
-    await message.reply( lan.last + " 8" )
+    await message.reply( lan.last )
 
 
 # _______________________________________________________________ Callback handlers _______________________________________________________________
