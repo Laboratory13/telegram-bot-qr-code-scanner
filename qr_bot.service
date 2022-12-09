@@ -1,0 +1,8 @@
+[Service]
+WorkingDirectory= /home/tg_bot/
+User=root
+ExecStart=/usr/bin/python3 tg_bot.py
+
+[Install]
+WantedBy=multi-user.target
+EOF
