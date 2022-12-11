@@ -10,7 +10,9 @@ from aiogram.dispatcher.filters import Text
 from helpers.QRreader import read_qr_code
         
 class bot_defaults:
-    video = "BAACAgIAAxkBAAIgs2OQ0bmRt3Bxh9dmeIQNj8hMnyNoAAJbJAACf4GISNHpnA02PGT_KwQ"
+    video = ""
+    file = types.input_file.InputFile("default.mp4")
+    print(file.filename)
 
 bot_d = bot_defaults()
 
@@ -323,7 +325,12 @@ async def check_handler( message: types.Message ):
 @dp.message_handler( Text(equals=lang.gal("instructions")) )
 async def instructions_handler( message: types.Message ):
     lan = get_lang( message.from_user.id, message.from_user.language_code )
-    await message.reply_video( bot_d.video )
+    if bot_d.video:
+        await message.reply_video( bot_d.video )
+    else:
+        vid = await message.reply_video( bot_d.file )
+        bot_d.video = vid.video.file_id
+    
 
 
 @dp.message_handler( Text(equals=lang.gal("contact_us")) )

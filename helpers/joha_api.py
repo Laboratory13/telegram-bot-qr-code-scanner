@@ -107,7 +107,7 @@ def gl(lang_str, json_dict):
     return val[lang_str]
 
 def get_print_values(res:dict, lang:lang.ru):
-    if( "error" in res and res["error"] == True ):
+    if( "error" in res or "product" not in res or res["product"] == None ):
         return 1, "" # lang.prod_not_found
     arr = [
         f'{ lang.prod_name } : { gl( lang.abr, res["product"]["productName"] ) }', 
