@@ -107,16 +107,19 @@ def gl(lang_str, json_dict):
     return val[lang_str]
 
 def get_print_values(res:dict, lang:lang.ru):
-    if( "error" in res or "product" not in res or res["product"] == None ):
+    if( "error" in res or "product" not in res or res["product"] == None or "client" not in res or res["client"] == None ):
         return 1, "" # lang.prod_not_found
-    arr = [
-        f'{ lang.prod_name } : { gl( lang.abr, res["product"]["productName"] ) }', 
-        f'{ lang.prod_desc } : { gl( lang.abr, res["product"]["productDescription"] ) }',
-        f'{ lang.client } : { res["client"]["firstName"] } { res["client"]["lastName"] }',
-        f'{ lang.order_time } : { res["order"]["productOrderTime"] }',
-        f'{ lang.phone } : { res["client"]["phonebook"]["phoneNumber"] }',
-    ]
-    text = '\n'.join(str(x) for x in arr)
-    if( "report" in res and res["report"] and "action" in res["report"] and res["report"]["action"] ):
-        return 2, text # lang.prod_sold
-    return 0, text
+    try:
+        arr = [
+            f'{ lang.prod_name } : { gl( lang.abr, res["product"]["productName"] ) }', 
+            f'{ lang.prod_desc } : { gl( lang.abr, res["product"]["productDescription"] ) }',
+            f'{ lang.client } : { res["client"]["firstName"] } { res["client"]["lastName"] }',
+            f'{ lang.order_time } : { res["order"]["productOrderTime"] }',
+            f'{ lang.phone } : { res["client"]["phonebook"]["phoneNumber"] }',
+        ]
+        text = '\n'.join(str(x) for x in arr)
+        if( "report" in res and res["report"] and "action" in res["report"] and res["report"]["action"] ):
+            return 2, text # lang.prod_sold
+        return 0, text
+    except:
+        return 1, "" # lang.prod_not_found
